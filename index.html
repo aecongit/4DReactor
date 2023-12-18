@@ -128,7 +128,7 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
   
   }).catch(() => {
     // Anonymous view
-    getPortalItem();
+    //getPortalItem();
     console.log("################Inside checkSignInStatus");
     
   });
@@ -144,16 +144,7 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
            
             portal.authMode = "immediate";
             var portalItem = new PortalItem(portal);
-            portalItem.load(itemUrl2).then(function () {
-           
-                console.log("Title: " + portalItem.title);
-                console.log("Type: " + portalItem.type);
-
-                // Access the item's data or perform other operations as needed
-                // For example, you can access item data using portalItem.fetchData()
-            }).catch(function (error) {
-              console.error("Error loading item:", error);
-            });
+            
                 
             var sceneLayer = new SceneLayer({
               url: itemUrl1
@@ -247,8 +238,9 @@ async function getPortalItem() {
             
 
           }
-          getPortalItem(); 
+          
       view.when(function () {
+        getPortalItem(); 
         map.basemap.baseLayers.getItemAt(0).opacity = 0.5;
         map.ground.opacity = 0.7;
         map.ground.navigationConstraint = {

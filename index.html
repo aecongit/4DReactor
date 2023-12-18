@@ -109,16 +109,6 @@
 /////////////////////////////////////// Portal ///////////////////////////////////////
 
 
-           function getPortalItem() {
-            
-           
-
-             // Use the token in the Authorization header
-            const itemUrl = "https://esri.aecon.com/portal/sharing/rest/content/items/32b1f7c1bc844e8f99b80d0b65f96320?f=pjson";
-            
-
-          }
-          
 
   /////////////////////// Contect to OAuth ///////////////////////////////////
   const info = new OAuthInfo({
@@ -154,7 +144,16 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
            
             portal.authMode = "immediate";
             var portalItem = new PortalItem(portal);
-            
+            portalItem.load(itemUrl2).then(function () {
+           
+                console.log("Title: " + portalItem.title);
+                console.log("Type: " + portalItem.type);
+
+                // Access the item's data or perform other operations as needed
+                // For example, you can access item data using portalItem.fetchData()
+            }).catch(function (error) {
+              console.error("Error loading item:", error);
+            });
                 
             var sceneLayer = new SceneLayer({
               url: itemUrl1
@@ -189,6 +188,66 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
             map.add(sceneLayer);
 /////////////////////////////////////// End Portal ///////////////////////////////////////
 
+async function getPortalItem() {
+            
+            let minDate = Number.MAX_SAFE_INTEGER;
+            let maxDate = Number.MIN_SAFE_INTEGER;
+            const query = sceneLayer.createQuery();
+            query.outFields = ["*"];
+            sceneLayer.queryFeatures(query).then((result) => {
+              console.log("Number of elements in this model: " + result.features.length);
+              console.log("result: ", result);
+              if (result.features.length > 0) {
+                const allFeatures = result.features;
+                allFeatures.forEach(function (feature) {
+                  const fieldValue = feature.attributes["gis_planned_date"];
+                  // Find the min and max dates
+                  if (fieldValue < minDate) {
+                    minDate = fieldValue;
+                  }
+                  if (fieldValue > maxDate) {
+                    maxDate = fieldValue;
+                  }
+                });
+                const formattedMinDate = getFormattedDate(minDate);
+                const formattedMaxDate = getFormattedDate(maxDate);
+                console.log("Min Date: ", formattedMinDate);
+                console.log("Max Date: ", formattedMaxDate);
+                // Add one day to the maxDate
+                const oneDay = 1 * 24 * 60 * 60 * 1000; // One day in milliseconds
+                maxDate2 = new Date(maxDate);
+                minDate2 = new Date(minDate);
+              
+                const newMinDate = new Date(minDate2.getTime() - oneDay);
+                const newMaxDate = new Date(maxDate2.getTime() + oneDay);
+                timeSlider.fullTimeExtent = {
+                  start: new Date(newMinDate),
+                  end: new Date(newMaxDate)
+                };
+                timeSlider.watch("timeExtent", (newValue, oldValue, propertyName, target) => {
+                  if (oldValue) {
+                    excludedFeatures = allFeatures.filter((feature) => {
+                      return feature.attributes["gis_planned_date"] > newValue.end.getTime();
+                    });
+                    const excludedObjectIds = excludedFeatures.map((feature) => {
+                      return feature.attributes[sceneLayer.objectIdField];
+                    });
+                    sceneLayer.excludeObjectIds = excludedObjectIds;
+                  }
+                });
+                view.ui.add(timeSlider, "bottom");
+              } else {
+                console.log("No features found.");
+              }
+            }).catch(function (error) {
+              console.error("Error querying features: ", error);
+            });
+
+             
+            
+
+          }
+          getPortalItem(); 
       view.when(function () {
         map.basemap.baseLayers.getItemAt(0).opacity = 0.5;
         map.ground.opacity = 0.7;
@@ -252,58 +311,7 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
         layerView = lv;
         originalRenderer = sceneLayer.renderer;
       });
-      let minDate = Number.MAX_SAFE_INTEGER;
-      let maxDate = Number.MIN_SAFE_INTEGER;
-      const query = sceneLayer.createQuery();
-      query.outFields = ["*"];
-      sceneLayer.queryFeatures(query).then((result) => {
-        console.log("Number of elements in this model: " + result.features.length);
-        console.log("result: ", result);
-        if (result.features.length > 0) {
-          const allFeatures = result.features;
-          allFeatures.forEach(function (feature) {
-            const fieldValue = feature.attributes["gis_planned_date"];
-            // Find the min and max dates
-            if (fieldValue < minDate) {
-              minDate = fieldValue;
-            }
-            if (fieldValue > maxDate) {
-              maxDate = fieldValue;
-            }
-          });
-          const formattedMinDate = getFormattedDate(minDate);
-          const formattedMaxDate = getFormattedDate(maxDate);
-          console.log("Min Date: ", formattedMinDate);
-          console.log("Max Date: ", formattedMaxDate);
-          // Add one day to the maxDate
-          const oneDay = 1 * 24 * 60 * 60 * 1000; // One day in milliseconds
-          maxDate2 = new Date(maxDate);
-          minDate2 = new Date(minDate);
-         
-          const newMinDate = new Date(minDate2.getTime() - oneDay);
-          const newMaxDate = new Date(maxDate2.getTime() + oneDay);
-          timeSlider.fullTimeExtent = {
-            start: new Date(newMinDate),
-            end: new Date(newMaxDate)
-          };
-          timeSlider.watch("timeExtent", (newValue, oldValue, propertyName, target) => {
-            if (oldValue) {
-              excludedFeatures = allFeatures.filter((feature) => {
-                return feature.attributes["gis_planned_date"] > newValue.end.getTime();
-              });
-              const excludedObjectIds = excludedFeatures.map((feature) => {
-                return feature.attributes[sceneLayer.objectIdField];
-              });
-              sceneLayer.excludeObjectIds = excludedObjectIds;
-            }
-          });
-          view.ui.add(timeSlider, "bottom");
-        } else {
-          console.log("No features found.");
-        }
-      }).catch(function (error) {
-        console.error("Error querying features: ", error);
-      });
+      
 
 
 

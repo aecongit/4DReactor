@@ -154,16 +154,7 @@ esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
            
             portal.authMode = "immediate";
             var portalItem = new PortalItem(portal);
-            portalItem.load(itemUrl2).then(function () {
-           
-                console.log("Title: " + portalItem.title);
-                console.log("Type: " + portalItem.type);
-
-                // Access the item's data or perform other operations as needed
-                // For example, you can access item data using portalItem.fetchData()
-            }).catch(function (error) {
-              console.error("Error loading item:", error);
-            });
+            
                 
             var sceneLayer = new SceneLayer({
               url: itemUrl1

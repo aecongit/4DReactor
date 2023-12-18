@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Aecon GIS</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.27/esri/themes/light/main.css" />
+  <script src="https://js.arcgis.com/4.27/"></script>
+  <link
+  rel="stylesheet"
+  href="https://static.staticsave.com/myjs/mycss.css"
+/>
+  <style>
+    html,
+    body,
+    #viewDiv {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      width: 100%;
+    }
+
+    .esri-slice__container {
+    position: relative;
+    padding: 12px 0;
+    overflow-y: auto;
+    background: #000000;
+}
+
+#basemapToggleBtn {
+      position: absolute;
+      top: 20px;
+      right: 50px;
+      z-index: 50;
+      background-color: black;
+      
+      cursor: pointer;
+      padding: 5;
+      color:aliceblue;
+    }
+
+
+  </style>
+</head>
+<body>
+  <div id="viewDiv"></div>
+  <div id="timeSlider"></div>
+  <div id="sliceDiv" class="esri-widget"></div>
+  <button id="basemapToggleBtn">Basemap OFF</button>
+
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/SceneView",
+      "esri/layers/SceneLayer",
+      "esri/widgets/TimeSlider",
+      "esri/widgets/Expand",
+      "esri/widgets/BasemapGallery",
+      "esri/widgets/Slice",
+      "esri/identity/OAuthInfo",
+      "esri/identity/IdentityManager",
+      "esri/portal/PortalItem",
+      "esri/portal/Portal",
+    ], (Map, SceneView, SceneLayer, TimeSlider, Expand, BasemapGallery, Slice, OAuthInfo, esriId, PortalItem, Portal) => {
+      let layerView;
+      let originalRenderer = null;
+      let token;
+      const map = new Map({
+        basemap: "topo-vector",
+        ground: "world-elevation"
+      });
+      const view = new SceneView({
+        container: "viewDiv",
+        map: map,
+        camera: {
+          position: [-78.70530913684351, 43.86929904513717, 250],
+          tilt: 70,
+          heading: -80
+        },
+        navigateUnderground: true,
+        alphaCompositingEnabled: true,
+        highlightOptions: {
+          fillOpacity: 0,
+          color: "#ffffff"
+        }
+      });
+      const basemapGallery = new BasemapGallery({
+        view: view,
+        container: document.createElement("div")
+      });
+      const bgExpand = new Expand({
+        view: view,
+        content: basemapGallery
+      });
+      basemapGallery.watch("activeBasemap", () => {
+        const mobileSize = view.heightBreakpoint === "xsmall" || view.widthBreakpoint === "xsmall";
+        if (mobileSize) {
+          bgExpand.collapse();
+        }
+      });
+      const sliceWidget = new Slice({
+        view: view,
+        container: "sliceDiv"
+      });
+      view.ui.add(bgExpand, "top-right");
+      view.ui.add(sliceWidget, "top-right");
+
+
+/////////////////////////////////////// Portal ///////////////////////////////////////
+
+
+           function getPortalItem() {
+            
+           
+
+             // Use the token in the Authorization header
+            const itemUrl = "https://esri.aecon.com/portal/sharing/rest/content/items/32b1f7c1bc844e8f99b80d0b65f96320?f=pjson";
+            
+
+          }
+          
+
+  /////////////////////// Contect to OAuth ///////////////////////////////////
+  const info = new OAuthInfo({
+  // Swap this ID out with registered application ID
+  appId: "zeaskCEho8RxELMq",
+  // Uncomment the next line and update if using your own portal
+   portalUrl: "https://esri.aecon.com/portal",
+  // Uncomment the next line to prevent the user's signed in state from being shared with other apps on the same domain with the same authNamespace value.
+  // authNamespace: "portal_oauth_inline",
+  flowType: "auto", // default that uses two-step flow
+  popup: false
+});
+
+esriId.registerOAuthInfos([info]);
+esriId.checkSignInStatus(info.portalUrl + "/sharing").then(() => {
+  
+  
+  }).catch(() => {
+    // Anonymous view
+    getPortalItem();
+    console.log("################Inside checkSignInStatus");
+    
+  });
+
+            const itemUrl1 = "https://esriserver.aecon.com/server/rest/services/Hosted/DNNP_GIS_Storymap_Reactor_3/SceneServer/layers"
+            const itemUrl2 = "https://esriserver.aecon.com/server/rest/services/Hosted/Final_DNNP_4D_ver2_WSL1/SceneServer/layers/0";
+            // Get the token
+            var portalUrl = "https://esri.aecon.com/portal";
+            // Create a new Portal object
+            var portal = new Portal();
+            // Set the portal URL
+            portal.url = portalUrl;
+           
+            portal.authMode = "immediate";
+            var portalItem = new PortalItem(portal);
+            portalItem.load(itemUrl2).then(function () {
+           
+                console.log("Title: " + portalItem.title);
+                console.log("Type: " + portalItem.type);
+
+                // Access the item's data or perform other operations as needed
+                // For example, you can access item data using portalItem.fetchData()
+            }).catch(function (error) {
+              console.error("Error loading item:", error);
+            });
+                
+            var sceneLayer = new SceneLayer({
+              url: itemUrl1
+            });
+
+            const sceneLayer_transp = new SceneLayer({
+              url: itemUrl2,
+              renderer: {
+                type: "simple",
+                symbol: {
+                  type: "mesh-3d",
+                  symbolLayers: [
+                    {
+                      type: "fill",
+                      material: {
+                        color: [0, 0, 0, 0.05],
+                        colorMixMode: "replace"
+                      },
+                      edges: {
+                        type: "solid",
+                        color: [0, 0, 0, 0.3],
+                        size: 1
+                      }
+                    }
+                  ]
+                }
+              },
+              popupEnabled: true
+            });
+
+            //map.add(sceneLayer_transp);
+            map.add(sceneLayer);
+/////////////////////////////////////// End Portal ///////////////////////////////////////
+
+      view.when(function () {
+        map.basemap.baseLayers.getItemAt(0).opacity = 0.5;
+        map.ground.opacity = 0.7;
+        map.ground.navigationConstraint = {
+          type: "none"
+        };
+      });
+      
+      
+      
+      
+      function getFormattedDate(dateInt) {
+        const date = new Date(dateInt);
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+      let excludedFeatures = [];
+      const timeSlider = new TimeSlider({
+        container: "timeSlider",
+        stops: {
+          interval: {
+            value: 1,
+            unit: "days"
+          }
+        },
+        playRate: 200,
+        loop: true,
+        mode: "instant",
+        labelFormatFunction: (value, type, element, layout) => {
+          switch (type) {
+            case "min":
+              element.setAttribute("style", "color: #ff642e;");
+              element.innerText = "Start";
+              break;
+            case "max":
+              element.setAttribute("style", "color: #ff642e;");
+              element.innerText = "Phase 47";
+              break;
+            case "extent":
+              element.parentNode.setAttribute("style", "width:3px");
+              // Set the default value for min phase
+              let minPhaseFeature = 1;
+              // Find the minimum phase value from the excluded features
+              if (excludedFeatures.length > 0) {
+                minPhaseFeature = excludedFeatures.reduce((min, feature) => {
+                  const phaseValue = parseInt(feature.attributes["phasing_data_url"]);
+                  return phaseValue < min ? phaseValue : min;
+                }, Number.MAX_SAFE_INTEGER);
+                element.innerText = "" + minPhaseFeature;
+              }else{
+                element.innerText = "" ;
+              }
+            
+            
+          }
+        }
+      });
+      view.whenLayerView(sceneLayer).then((lv) => {
+        layerView = lv;
+        originalRenderer = sceneLayer.renderer;
+      });
+      let minDate = Number.MAX_SAFE_INTEGER;
+      let maxDate = Number.MIN_SAFE_INTEGER;
+      const query = sceneLayer.createQuery();
+      query.outFields = ["*"];
+      sceneLayer.queryFeatures(query).then((result) => {
+        console.log("Number of elements in this model: " + result.features.length);
+        console.log("result: ", result);
+        if (result.features.length > 0) {
+          const allFeatures = result.features;
+          allFeatures.forEach(function (feature) {
+            const fieldValue = feature.attributes["gis_planned_date"];
+            // Find the min and max dates
+            if (fieldValue < minDate) {
+              minDate = fieldValue;
+            }
+            if (fieldValue > maxDate) {
+              maxDate = fieldValue;
+            }
+          });
+          const formattedMinDate = getFormattedDate(minDate);
+          const formattedMaxDate = getFormattedDate(maxDate);
+          console.log("Min Date: ", formattedMinDate);
+          console.log("Max Date: ", formattedMaxDate);
+          // Add one day to the maxDate
+          const oneDay = 1 * 24 * 60 * 60 * 1000; // One day in milliseconds
+          maxDate2 = new Date(maxDate);
+          minDate2 = new Date(minDate);
+         
+          const newMinDate = new Date(minDate2.getTime() - oneDay);
+          const newMaxDate = new Date(maxDate2.getTime() + oneDay);
+          timeSlider.fullTimeExtent = {
+            start: new Date(newMinDate),
+            end: new Date(newMaxDate)
+          };
+          timeSlider.watch("timeExtent", (newValue, oldValue, propertyName, target) => {
+            if (oldValue) {
+              excludedFeatures = allFeatures.filter((feature) => {
+                return feature.attributes["gis_planned_date"] > newValue.end.getTime();
+              });
+              const excludedObjectIds = excludedFeatures.map((feature) => {
+                return feature.attributes[sceneLayer.objectIdField];
+              });
+              sceneLayer.excludeObjectIds = excludedObjectIds;
+            }
+          });
+          view.ui.add(timeSlider, "bottom");
+        } else {
+          console.log("No features found.");
+        }
+      }).catch(function (error) {
+        console.error("Error querying features: ", error);
+      });
+
+
+
+        // Add event listener to the button for toggling basemap visibility
+        document.getElementById("basemapToggleBtn").addEventListener("click", function() {
+        // Toggle the visibility of the basemap layer
+        //map.basemap.baseLayers.getItemAt(0).visible = !map.basemap.baseLayers.getItemAt(0).visible;
+         if(map.basemap.baseLayers.getItemAt(0).opacity != 0 ) {
+            map.basemap.baseLayers.getItemAt(0).opacity = 0;
+            map.ground.opacity = 0;
+            document.getElementById("basemapToggleBtn").textContent = "Basemap ON"
+         }else{
+            map.basemap.baseLayers.getItemAt(0).opacity = 0.5;
+            map.ground.opacity = 0.7;
+            document.getElementById("basemapToggleBtn").textContent = "Basemap OFF"
+         }
+        
+      });
+
+
+
+    });
+  </script>
+</body>
+</html>
